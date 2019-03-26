@@ -39,9 +39,16 @@ Entrez ci-dessous les clés d\'identification et enregistrez (<a href="http://ph
 	'label_google_api_key' => 'Clé de l\'API',
 	'legend_api_google' => 'Application Google',
 
+	'explication_linkedin_api_oauth' => 'Créez une application LinkedIn <a href="https://www.linkedin.com/developers/apps">dans la console développeurs (https://www.linkedin.com/developers/apps)</a> avec l\'url de redirection <tt>@url_redirect@</tt>.
+Entrez ci-dessous les clés d\'identification et enregistrez (<a href="https://phppot.com/php/simple-php-linkedin-oauth-login-integration/">Plus d\'aide</a>).',
+	'label_linkedin_client_id' => 'Identifiant Client',
+	'label_linkedin_client_secret' => 'Code secret Client',
+	'legend_api_linkedin' => 'Application LinkedIn',
+
 	'label_activer_facebook_oui' => 'Activer le login rapide via Facebook',
 	'label_activer_twitter_oui' => 'Activer le login rapide via Twitter',
 	'label_activer_google_oui' => 'Activer le login rapide via Google',
+	'label_activer_linkedin_oui' => 'Activer le login rapide via LinkedIn',
 	'label_activer_persona_oui' => 'Activer le login rapide via Persona',
 	'explication_activer_twitter' => 'Installez et configurez le plugin <a href="http://plugins.spip.net/twitter">Twitter</a> pour utiliser le login rapide via Twitter.'
 

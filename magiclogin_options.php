@@ -15,7 +15,7 @@ if (!defined('_ECRIRE_INC_VERSION')) return;
 // define('_MAGICLOGIN_IGNORE_SSL_VERIFYPEER',true);
 
 function magiclogin_ok(){
-	if (magiclogin_facebook_ok() OR magiclogin_google_ok() OR magiclogin_twitter_ok() OR magiclogin_persona_ok())
+	if (magiclogin_facebook_ok() OR magiclogin_google_ok() OR magiclogin_twitter_ok() OR magiclogin_persona_ok() OR magiclogin_linkedin_ok())
 		return ' ';
 	return '';
 }
@@ -65,6 +65,19 @@ function magiclogin_twitter_ok(){
 function magiclogin_persona_ok(){
 	include_spip("inc/config");
 	if (lire_config('magiclogin/activer_persona','oui')=='oui')
+		return ' ';
+	return '';
+}
+
+/**
+ * verifier que LinkedIn est configure
+ * @return string
+ */
+function magiclogin_linkedin_ok(){
+	include_spip("inc/config");
+	if (lire_config('magiclogin/activer_linkedin','oui')=='oui'
+		AND lire_config('magiclogin/linkedin_client_id')
+		AND lire_config('magiclogin/linkedin_client_secret'))
 		return ' ';
 	return '';
 }

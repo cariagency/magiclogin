@@ -109,6 +109,39 @@
 					</ul>
 				</fieldset>
 			</li>
+			#SET{name,activer_linkedin}#SET{obli,''}#SET{defaut,'oui'}#SET{erreurs,#ENV**{erreurs}|table_valeur{#GET{name}}}
+			<li class="editer pleine_largeur editer_[(#GET{name})][ (#GET{obli})][ (#GET{erreurs}|oui)erreur]">[
+				<span class='erreur_message'>(#GET{erreurs})</span>
+				]#SET{val,'non'}
+				<input type="hidden" name="#GET{name}" value="#GET{val}" />
+				#SET{val,oui}
+				<div class="choix">
+					<input type="checkbox" name="#GET{name}" class="checkbox" id="#GET{name}_#GET{val}" value="#GET{val}"[(#ENV{#GET{name},#GET{defaut}}|=={#GET{val}}|oui)checked="checked"] />
+					<label for="#GET{name}_#GET{val}">[(#GET{fl}|concat{':label_',#GET{name},'_',#GET{val}}|_T)]</label>
+				</div>
+			</li>
+			<li class="fieldset suite">
+				<fieldset class="api">
+					<legend><:magiclogin:legend_api_linkedin:></legend>
+					#SET{url_callback,#EVAL{_DIR_RACINE}|concat{magiclogin.api/linkedin/callback}|url_absolue}
+					<p class="explication"><:magiclogin:explication_linkedin_api_oauth{url_redirect=#GET{url_callback}}:></p>
+					<ul class="editer-groupe compte">
+						#SET{name,linkedin_client_id}#SET{obli,''}#SET{defaut,''}#SET{erreurs,#ENV**{erreurs}|table_valeur{#GET{name}}}
+						<li class="editer editer_[(#GET{name})][ (#GET{obli})][ (#GET{erreurs}|oui)erreur]">
+							<label for="#GET{name}">[(#GET{fl}|concat{':label_',#GET{name}}|_T)]</label>[
+							<span class='erreur_message'>(#GET{erreurs})</span>
+							]<input type="text" name="#GET{name}" class="text" value="#ENV*{#GET{name},#GET{defaut}}" id="#GET{name}" [(#HTML5|et{#GET{obli}})required='required']/>
+						</li>
+						#SET{name,linkedin_client_secret}#SET{obli,''}#SET{defaut,''}#SET{erreurs,#ENV**{erreurs}|table_valeur{#GET{name}}}
+						<li class="editer editer_[(#GET{name})][ (#GET{obli})][ (#GET{erreurs}|oui)erreur]">
+							<label for="#GET{name}">[(#GET{fl}|concat{':label_',#GET{name}}|_T)]</label>[
+							<span class='erreur_message'>(#GET{erreurs})</span>
+							]<input type="text" name="#GET{name}" class="text" value="[(#ENV{linkedin_client_secret}|=={#CONFIG{magiclogin/linkedin_client_secret}}|?{'',#ENV{linkedin_client_secret}})]" id="#GET{name}" [(#HTML5|et{#GET{obli}})required='required']/>
+							[<em><tt>(#CONFIG{magiclogin/linkedin_client_secret}|magiclogin_masquer_secret)</tt></em>]
+						</li>
+					</ul>
+				</fieldset>
+			</li>
 			#SET{name,activer_persona}#SET{obli,''}#SET{defaut,'oui'}#SET{erreurs,#ENV**{erreurs}|table_valeur{#GET{name}}}
 			<li class="editer pleine_largeur editer_[(#GET{name})][ (#GET{obli})][ (#GET{erreurs}|oui)erreur]">[
 				<span class='erreur_message'>(#GET{erreurs})</span>
