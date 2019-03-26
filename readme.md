@@ -24,4 +24,6 @@ Pour permettre la connexion avec Facebook, il faut créer une application Faceboo
 
 Pour permettre la connexion avec Google, il faut créer une application Google et indiquer les clés d'accès à l'application dans la configuration du plugin (Tutoriel : http://phppot.com/php/php-google-oauth-login/ )
 
+Pour permettre la connexion avec LinkedIn, il faut créer une application LinkedIn et indiquer les clés d'accès à l'application dans la configuration du plugin (Tutoriel : https://phppot.com/php/simple-php-linkedin-oauth-login-integration/ )
+
 Pour la connexion avec Persona il n'y a pas de pré-requis technique.
