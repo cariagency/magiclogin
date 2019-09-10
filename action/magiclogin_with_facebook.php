@@ -29,21 +29,41 @@ function action_magiclogin_with_facebook_dist($args) {
 
 	include_spip("inc/config");
 	include_spip("inc/filtres");
-	include_spip("lib/facebook-php-sdk/facebook");
+	include_spip("inc/session");
 
-	$facebook = new Facebook(array(
-		'appId' => lire_config('magiclogin/facebook_consumer_key'),
-		'secret' => lire_config('magiclogin/facebook_consumer_secret'),
-	));
+	require_once __DIR__ . '/../lib/composer/vendor/autoload.php';
 
-	$redirect = (isset($_SESSION['facebook_redirect'])?$_SESSION['facebook_redirect']
+	$fb = new \Facebook\Facebook([
+	  'app_id' => lire_config('magiclogin/facebook_consumer_key'),
+	  'app_secret' => lire_config('magiclogin/facebook_consumer_secret'),
+	  'default_graph_version' => 'v2.10',
+	]);
+
+	$redirect = (session_get('facebook_redirect')?session_get('facebook_redirect')
 		:(_request('redirect')?_request('redirect'):$GLOBALS["meta"]["adresse_site"]));
 
-	// Check if allready loged
-	$user_id = $facebook->getUser();
+	$helper = $fb->getRedirectLoginHelper();
+
+	if (_request('code')) {
+		spip_log("FB Login : Callback initiated", "magiclogin" . _LOG_INFO);
+
+		try {
+			$accessToken = $helper->getAccessToken();
+			$response = $fb->get('/me?fields=id,name,email,first_name,last_name', $accessToken);
+		} catch(Exception $e) {
+			spip_log("Exception SDK Facebook : $e", "magiclogin" . _LOG_ERREUR);
+		}
+
+		if ($response) {
+			$user = $response->getGraphUser();
+			$user_id = $user['id'];
+		}
+	}
+
 	if ($user_id) {
-		unset($_SESSION['facebook_redirect']);
-		$auteur = magiclogin_informer_facebookaccount($user_id,$facebook);
+		spip_log("FB Login : User found", "magiclogin" . _LOG_INFO);
+		session_set('facebook_redirect', FALSE);
+		$auteur = magiclogin_informer_facebookaccount($user);
 		if (!isset($auteur['id_auteur'])){
 			// si pas trouvé, on redirige vers l'inscription en notant en session les infos collectees
 			// pour le pre-remplissage
@@ -62,9 +82,14 @@ function action_magiclogin_with_facebook_dist($args) {
 	}
 	else {
 
+		spip_log("FB Login : First call", "magiclogin" . _LOG_DEBUG);
 		// au premier appel
 		// si pas deja loge, et si pas en retour de login, lancer la demande
 		if (!$user_id AND !_request('code') AND !in_array("callback",$args)){
+
+			if (_request('redirect')){
+				session_set('facebook_redirect', _request('redirect'));
+			}
 
 			/**
 			 * L'URL de callback qui sera utilisée suite à la validation chez FB
@@ -72,12 +97,10 @@ function action_magiclogin_with_facebook_dist($args) {
 			 */
 			$oauth_callback = url_absolue("magiclogin.api/facebook/callback");
 
-			$loginUrl = $facebook->getLoginUrl(array('redirect_uri'=>$oauth_callback,'response_type'=>'code'/*,'scope'=>'email'*/));
-			$GLOBALS['redirect'] = $loginUrl;
+			$permissions = ['email'];
+			$loginUrl = $helper->getLoginUrl($oauth_callback, $permissions);
 
-			if (_request('redirect')){
-				$_SESSION['facebook_redirect'] = _request('redirect');
-			}
+			$GLOBALS['redirect'] = $loginUrl;
 		}
 		else {
 			// redirect par defaut
@@ -115,12 +138,13 @@ function action_magiclogin_with_facebook_dist($args) {
  * Retrouver l'auteur associe aux tokens Twitter
  * et si il n'existe pas le pre-remplir a partir des infos collectees aupres de Twitter
  *
- * @param int $user_id
- * @param object $facebook
+ * @param array $user_profile
  *
  * @return array
  */
-function magiclogin_informer_facebookaccount($user_id,&$facebook){
+function magiclogin_informer_facebookaccount($user_profile){
+
+	$user_id = $user_profile['id'];
 
 	// chercher l'auteur avec ce user_id facebook
 	if (!$infos = sql_fetsel("*",
@@ -133,15 +157,15 @@ function magiclogin_informer_facebookaccount($user_id,&$facebook){
 		$infos['source'] = "facebook";
 		$infos['facebook_id'] = $user_id;
 
-		try {
-			$user_profile = $facebook->api('/me');
-			$infos['nom'] = $user_profile['name'];
-			$infos['lang'] = reset(explode("_", $user_profile['lang']));
-			# debug : a virer car donnees persos
-			spip_log("user_profile:" . var_export($user_profile, true), "magiclogin");
-		} catch (FacebookApiException $e) {
-			spip_log("Echec /me FacebookApiException $e", "magiclogin" . _LOG_ERREUR);
-		}
+		$infos['nom'] = $user_profile['name'];
+		$infos['nom_famille'] = $user_profile['last_name'];
+		$infos['prenom'] = $user_profile['first_name'];
+		$infos['email'] = $user_profile['email'];
+
+		$infos['login'] = $user_profile['email'];
+
+		$infos['url_facebook'] = 'https://www.facebook.com/'.$user_id;
+
 	}
 
 	return $infos;

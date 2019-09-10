@@ -23,22 +23,22 @@ function action_magiclogin_with_linkedin_dist() {
 	include_spip("inc/session");
 	include_spip('inc/headers');
 
-	include_spip("lib/linkedin/vendor/autoload");
-
-
-	$client_id = lire_config('magiclogin/linkedin_client_id');
-	$client_secret = lire_config('magiclogin/linkedin_client_secret');
-
-	$redirect_uri = url_absolue('magiclogin.api/linkedin/callback');
+	require_once __DIR__ . '/../lib/composer/vendor/autoload.php';
 
 	$provider = new League\OAuth2\Client\Provider\LinkedIn([
-	    'clientId'          => $client_id,
-	    'clientSecret'      => $client_secret,
-	    'redirectUri'       => $redirect_uri,
+	    'clientId'          => lire_config('magiclogin/linkedin_client_id'),
+	    'clientSecret'      => lire_config('magiclogin/linkedin_client_secret'),
+	    'redirectUri'       => url_absolue('magiclogin.api/linkedin/callback'),
 	]);
+
+	$redirect = (session_get('linkedin_redirect')?session_get('linkedin_redirect')
+		:(_request('redirect')?_request('redirect'):$GLOBALS["meta"]["adresse_site"]));
 
 	if (!_request('code')) {
 
+		spip_log("LinkedIn Login : Callback initiated", "magiclogin" . _LOG_INFO);
+
+		session_set('linkedin_redirect', $redirect);
 	    // If we don't have an authorization code then get one
 	    $authUrl = $provider->getAuthorizationUrl();
 	    session_set('linkedin_oauth2state', $provider->getState());
@@ -47,9 +47,10 @@ function action_magiclogin_with_linkedin_dist() {
 	// Check given state against previously stored one to mitigate CSRF attack
 	} elseif (empty(_request('state')) || (_request('state') !== session_get('linkedin_oauth2state'))) {
 	    session_set('linkedin_oauth2state', null);
-	    spip_log("LinkedIn Login invalid state","magiclogin"._LOG_ERREUR);
+	    spip_log("LinkedIn Login error : invalid state","magiclogin"._LOG_ERREUR);
 
 	} else {
+		spip_log("LinkedIn Login : Callback initiated", "magiclogin" . _LOG_INFO);
 
 	    // Optional: Now you have a token you can look up a users profile data
 	    try {
@@ -60,7 +61,18 @@ function action_magiclogin_with_linkedin_dist() {
 		    ]);
 
 	        // We got an access token, let's now get the user's details
-	        $userData = $provider->withResourceOwnerVersion(2)->getResourceOwner($token);
+	        $userData = $provider->getResourceOwner($token);
+	    } catch (Exception $e) {
+
+	        // Failed to get user details
+			if (_request("error")){
+				spip_log("LinkedIn Login error : ".$e->getMessage(),"magiclogin"._LOG_ERREUR);
+			}
+	    }
+
+	    if ($userData) {
+			spip_log("LinkedIn Login : User found", "magiclogin" . _LOG_INFO);
+			session_set('linkedin_redirect', FALSE);
 
 			$auteur = magiclogin_informer_linkedinaccount($userData);
 			if (!isset($auteur['id_auteur'])){
@@ -79,12 +91,6 @@ function action_magiclogin_with_linkedin_dist() {
 				$GLOBALS['redirect'] = $redirect;
 			}
 
-	    } catch (Exception $e) {
-
-	        // Failed to get user details
-			if (_request("error")){
-				spip_log("LinkedIn Login error : ".$e->getMessage(),"magiclogin"._LOG_ERREUR);
-			}
 	    }
 	}
 
@@ -101,25 +107,28 @@ function action_magiclogin_with_linkedin_dist() {
  * @return array
  */
 function magiclogin_informer_linkedinaccount($userData){
-	if (!isset($userData->id) || $userData->id) {
-		spip_log("LinkedIn Login missing userData : ".var_export($userData),"magiclogin"._LOG_ERREUR);
+	if (!$userData || !$userData->getId()) {
+		spip_log("LinkedIn Login error : missing userData","magiclogin"._LOG_ERREUR);
 		return FALSE;
 	}
 	// chercher l'auteur avec ce user_id google
 	if (!$infos = sql_fetsel("*",
 		"spip_auteurs",
-		"statut!=" . sql_quote('5poubelle') . " AND linkedin_id=" . sql_quote($userData->id, '', 'varchar'))
+		"statut!=" . sql_quote('5poubelle') . " AND linkedin_id=" . sql_quote($userData->getId(), '', 'varchar'))
 	){
 		// si pas trouve, on pre - rempli avec les infos de Google
 		$infos = array();
 		$infos['source'] = "linkedin";
-		$infos['linked_id'] = $userData->id;
-		$infos['nom'] = $userData->name;
+		$infos['linkedin_id'] = $userData->getId();
+		$infos['nom'] = $userData->getFirstName().' '.$userData->getLastName();
+		$infos['nom_famille'] = $userData->getLastName();
+		$infos['prenom'] = $userData->getFirstName();
 
-		$infos['email'] = $userData->email;
+		$infos['email'] = $userData->getEmail();
 
-		$infos['login'] = $userData->email;
-		$infos['logo'] = $userData->picture;
+		$infos['login'] = $userData->getEmail();
+
+		$infos['url_linkedin'] = $userData->getUrl();
 	}
 
 	return $infos;
