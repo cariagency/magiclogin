@@ -19,6 +19,7 @@
 	<pipeline nom="insert_head_css" />
 	<pipeline nom="formulaire_fond" />
 
+	<necessite nom="php" compatibilite="[7.1.0;[" />
 
 	<utilise nom="twitter" compatibilite="[1.1.1;]" />
 </paquet>
