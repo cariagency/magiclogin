@@ -30,6 +30,7 @@ function action_magiclogin_with_facebook_dist($args) {
 	include_spip("inc/config");
 	include_spip("inc/filtres");
 	include_spip("inc/session");
+	session_start();
 
 	require_once __DIR__ . '/../lib/composer/vendor/autoload.php';
 
@@ -48,10 +49,14 @@ function action_magiclogin_with_facebook_dist($args) {
 		spip_log("FB Login : Callback initiated", "magiclogin" . _LOG_INFO);
 
 		try {
+			spip_log("FB Login : trying to retrieve token", "magiclogin" . _LOG_DEBUG);
 			$accessToken = $helper->getAccessToken();
+			spip_log("FB Login : trying to retrieve user info", "magiclogin" . _LOG_DEBUG);
 			$response = $fb->get('/me?fields=id,name,email,first_name,last_name', $accessToken);
 		} catch(Exception $e) {
 			spip_log("Exception SDK Facebook : $e", "magiclogin" . _LOG_ERREUR);
+			spip_log("_SESSION = ".var_export($_SESSION,true), "magiclogin" . _LOG_DEBUG);
+			spip_log("_GET = ".var_export($_GET,true), "magiclogin" . _LOG_DEBUG);
 		}
 
 		if ($response) {
